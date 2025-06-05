@@ -1,10 +1,9 @@
-// controllers/youtubeController.js
 const axios = require('axios');
 require('dotenv').config();
 
 const YT_API_KEY = process.env.YT_API_KEY;
 
-// Function to send comment to ML microservice for sentiment analysis
+// Sentiment analysis function
 const analyzeSentiment = async (commentText) => {
   try {
     const response = await axios.post('http://localhost:5001/analyze', {
@@ -12,12 +11,10 @@ const analyzeSentiment = async (commentText) => {
     });
     return response.data;
   } catch (error) {
-    // Log the full error for better debugging:
     console.error('Sentiment analysis error:', error.response ? error.response.data : error.message || error);
     return { label: 'UNKNOWN', score: 0 };
   }
 };
-
 
 exports.getComments = async (req, res) => {
   const { videoUrl } = req.query;
@@ -40,27 +37,53 @@ exports.getComments = async (req, res) => {
       return res.status(400).json({ error: 'Invalid YouTube video URL' });
     }
 
-    const ytApiUrl = `https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=${videoId}&key=${YT_API_KEY}&maxResults=90`;
+    // Step 1: Fetch total comment count
+    const statsUrl = `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${videoId}&key=${YT_API_KEY}`;
+    const statsResponse = await axios.get(statsUrl);
+    const totalCommentCount = statsResponse.data.items[0]?.statistics?.commentCount || 0;
 
-    const response = await axios.get(ytApiUrl);
+    // Step 2: Paginate and collect comments
+    const maxCommentsToFetch = 500; // for number of cmts to fetch
+    let nextPageToken = null;
+    let allComments = [];
 
-    // Analyze sentiment for each comment
-    const comments = await Promise.all(
-      response.data.items.map(async (item) => {
+    do {
+      const ytApiUrl = `https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=${videoId}&key=${YT_API_KEY}&maxResults=100${nextPageToken ? `&pageToken=${nextPageToken}` : ''}`;
+      const response = await axios.get(ytApiUrl);
+
+      const fetchedComments = response.data.items.map(item => {
         const snippet = item.snippet.topLevelComment.snippet;
-        const sentiment = await analyzeSentiment(snippet.textDisplay);
-
         return {
           authorName: snippet.authorDisplayName,
           text: snippet.textDisplay,
           likeCount: snippet.likeCount,
+        };
+      });
+
+      allComments.push(...fetchedComments);
+
+      nextPageToken = response.data.nextPageToken;
+    } while (nextPageToken && allComments.length < maxCommentsToFetch);
+
+    // Step 3: Analyze sentiment
+    const analyzedComments = await Promise.all(
+      allComments.slice(0, maxCommentsToFetch).map(async (comment) => {
+        const sentiment = await analyzeSentiment(comment.text);
+        return {
+          ...comment,
           sentiment: sentiment.label,
           confidence: sentiment.score.toFixed(2),
         };
       })
     );
 
-    res.json({ comments });
+    // Step 4: Return results
+    res.json({
+      comments: analyzedComments,
+      totalCommentCount,
+      fetchedCount: analyzedComments.length,
+    });
+
   } catch (error) {
     console.error('YouTube comment fetch error:', error.message);
     res.status(500).json({ error: 'Failed to fetch YouTube comments' });
