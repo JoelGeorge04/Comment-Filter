@@ -41,5 +41,6 @@ You can extend this feature by:
 - **ML**: Python (scikit-learn or similar)
 - **API**: YouTube Data API v3
 - **Optional**: Flask (for ML inference as microservice)
+![Screenshot](https://postimg.cc/cvWy6Jhg)
 
 ---
