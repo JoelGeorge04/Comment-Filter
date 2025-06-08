@@ -41,6 +41,22 @@ You can extend this feature by:
 - **ML**: Python (scikit-learn or similar)
 - **API**: YouTube Data API v3
 - **Optional**: Flask (for ML inference as microservice)
-![Screenshot](https://postimg.cc/cvWy6Jhg)
 
 ---
+<h3>📸 Sample UI Screenshots</h3>
+
+<p>
+  <img src="https://i.postimg.cc/gcsknPWv/Screenshot-2025-06-02-213257.png" alt="Screenshot 1" width="300" />
+</p>
+
+<p>
+  <img src="https://i.postimg.cc/TYHdJqh1/Screenshot-2025-06-02-213319.png" alt="Screenshot 2" width="300" />
+</p>
+
+<p>
+  <img src="https://i.postimg.cc/02N5SHkh/Screenshot-2025-06-02-213336.png" alt="Screenshot 3" width="300" />
+</p>
+
+<p>
+  <img src="https://i.postimg.cc/2SbzcbBw/Screenshot-2025-06-05-195134.png" alt="Screenshot 4" width="300" />
+</p>
